@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إلى مريم</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+
+        :root {
+            --bg-dark: #1a0b1c;
+            --primary: #ff2a5f;
+            --card-bg: rgba(255, 255, 255, 0.1);
+            --text-light: #fff;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, var(--bg-dark), #4a154b);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* جزيئات القلوب العائمة في الخلفية */
+        .particles {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .screen {
+            display: none;
+            text-align: center;
+            z-index: 10;
+            width: 90%;
+            max-width: 600px;
+            animation: fadeIn 1s ease-in;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* --- المرحلة 1: تأثير الكتابة --- */
+        #typewriter-text {
+            font-size: 2em;
+            line-height: 1.5;
+            min-height: 100px;
+            margin-bottom: 30px;
+        }
+
+        .btn-next {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .btn-next.show {
+            opacity: 1;
+            pointer-events: auto;
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        .btn-next:hover {
+            transform: scale(1.05);
+        }
+
+        /* --- المرحلة 2: لعبة الذاكرة --- */
+        .memory-game {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .memory-card {
+            background: transparent;
+            height: 120px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .memory-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .memory-card.flip .memory-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .memory-card-front, .memory-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .memory-card-front {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            font-size: 2em;
+        }
+
+        .memory-card-back {
+            background: var(--primary);
+            transform: rotateY(180deg);
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        /* --- المرحلة 3: الجواب السري --- */
+        .envelope-container {
+            cursor: pointer;
+            transition: 0.5s;
+        }
+        
+        .envelope-container:hover {
+            transform: scale(1.05);
+        }
+
+        .letter {
+            display: none;
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 1.5em;
+            line-height: 1.6;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            animation: slideUp 1s ease-out forwards;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+    <div id="screen1" class="screen active">
+        <div id="typewriter-text"></div>
+        <button id="start-btn" class="btn-next" onclick="goToScreen('screen2')">يلا نبدأ</button>
+    </div>
+
+    <div id="screen2" class="screen">
+        <h2>عشان تقري الرسالة، لازم تجمعي كل صفتين مع بعض</h2>
+        <div class="memory-game" id="memory-game">
+            </div>
+        <br>
+        <button id="unlock-btn" class="btn-next" onclick="goToScreen('screen3')">افتحي الجواب</button>
+    </div>
+
+    <div id="screen3" class="screen">
+        <div class="envelope-container" onclick="openLetter()" id="envelope">
+            <h1 style="font-size: 4em; margin: 0;">💌</h1>
+            <p>اضغطي لفتح الجواب</p>
+        </div>
+        <div class="letter" id="final-letter">
+            <strong>إلى مريم،</strong><br>
+            الكود ده كله كتبته عشان أقولك حاجة واحدة بس..<br>
+            أنا بحبك ❤️<br>
+            <span style="font-size: 0.7em; color: gray;">- إبراهيم</span>
+        </div>
+    </div>
+
+    <script>
+        // --- تأثير الكتابة التلقائية ---
+        const textToType = "أهلاً يا مريم.. مكنتش عارف أعبر عن اللي جوايا إزاي، فقررت أعمل ده بالطريقة اللي بفهم فيها.. خطوة صغيرة تفصلك عن السر..";
+        let i = 0;
+        function typeWriter() {
+            if (i < textToType.length) {
+                document.getElementById("typewriter-text").innerHTML += textToType.charAt(i);
+                i++;
+                setTimeout(typeWriter, 50);
+            } else {
+                document.getElementById("start-btn").classList.add('show');
+            }
+        }
+        window.onload = typeWriter;
+
+        // --- التنقل بين الشاشات ---
+        function goToScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            if(screenId === 'screen2') initGame();
+        }
+
+        // --- منطق لعبة الذاكرة ---
+        const cardsData = ['أجمل ضحكة', 'أطيب قلب', 'أحلى عيون'];
+        // تكرار البيانات لعمل أزواج
+        let gameCards = [...cardsData, ...cardsData];
+        let hasFlippedCard = false;
+        let lockBoard = false;
+        let firstCard, secondCard;
+        let matchedPairs = 0;
+
+        function initGame() {
+            const gameContainer = document.getElementById('memory-game');
+            gameContainer.innerHTML = '';
+            // خلط الكروت
+            gameCards.sort(() => 0.5 - Math.random());
+
+            gameCards.forEach(text => {
+                const card = document.createElement('div');
+                card.classList.add('memory-card');
+                card.dataset.name = text;
+                card.innerHTML = `
+                    <div class="memory-card-inner">
+                        <div class="memory-card-front">❓</div>
+                        <div class="memory-card-back">${text}</div>
+                    </div>
+                `;
+                card.addEventListener('click', flipCard);
+                gameContainer.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+
+            this.classList.add('flip');
+
+            if (!hasFlippedCard) {
+                hasFlippedCard = true;
+                firstCard = this;
+                return;
+            }
+
+            secondCard = this;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.name === secondCard.dataset.name;
+            isMatch ? disableCards() : unflipCards();
+        }
+
+        function disableCards() {
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            matchedPairs++;
+            if(matchedPairs === cardsData.length) {
+                setTimeout(() => {
+                    document.getElementById('unlock-btn').classList.add('show');
+                }, 1000);
+            }
+            resetBoard();
+        }
+
+        function unflipCards() {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.remove('flip');
+                secondCard.classList.remove('flip');
+                resetBoard();
+            }, 1000);
+        }
+
+        function resetBoard() {
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+        }
+
+        // --- المرحلة النهائية ---
+        function openLetter() {
+            document.getElementById('envelope').style.display = 'none';
+            document.getElementById('final-letter').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
